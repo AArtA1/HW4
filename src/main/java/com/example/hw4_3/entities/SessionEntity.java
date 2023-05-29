@@ -26,4 +26,5 @@ public class SessionEntity {
 
     private LocalDateTime expires_at;
 
+    //
 }
