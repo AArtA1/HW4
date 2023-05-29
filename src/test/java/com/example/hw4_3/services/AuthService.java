@@ -26,6 +26,7 @@ public class AuthService {
             throw new Exception();
         }
 
+        //
         // Create a new user entity
         UserEntity user = new UserEntity();
         user.setUsername(request.getUsername());
