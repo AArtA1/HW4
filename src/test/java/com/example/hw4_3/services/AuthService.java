@@ -1,11 +1,14 @@
 package com.example.hw4_3.services;
 
+import com.example.hw4_3.dto.AuthenticationRequest;
 import com.example.hw4_3.dto.RegistrationRequest;
 import com.example.hw4_3.entities.UserEntity;
 import com.example.hw4_3.repositories.UserRepository;
+import org.junit.platform.commons.util.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -15,9 +18,13 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    public void registerUser(RegistrationRequest request) {
+    public void registerUser(RegistrationRequest request) throws Exception {
         // Validate input data
-        validateRegistrationRequest(request);
+        try {
+            validateRegistrationRequest(request);
+        } catch (Exception e) {
+            throw new Exception();
+        }
 
         // Create a new user entity
         UserEntity user = new UserEntity();
@@ -32,12 +39,58 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private void validateRegistrationRequest(RegistrationRequest request) {
-        // Validate the registration request, e.g., check email format, password strength, etc.
+
+    private void validateRegistrationRequest(RegistrationRequest request) throws Exception {
+        if (StringUtils.isBlank(request.getUsername()) || StringUtils.isBlank(request.getEmail())
+                || StringUtils.isBlank(request.getPassword())) {
+            throw new Exception("Missing required fields");
+        }
+
+        if (!isValidEmail(request.getEmail())) {
+            throw new Exception("Invalid email");
+        }
+
+    }
+
+    public String authenticateUser(AuthenticationRequest request) throws Exception {
+        // Поиск пользователя по нику
+        Optional<UserEntity> user = userRepository.findByEmail(request.getEmail());
+
+        // Проверка наличия пользователя и правильности пароля
+        if (user == null || (user.isPresent() && !user.get().getPasswordHash().equals(request.getPassword()))) {
+            throw new Exception("Invalid email or password");
+        }
+
+        // Генерация JWT токена
+        //String token = generateToken(user);
+
+        return token;
+    }
+
+    /*private String generateToken(UserEntity user) {
+        // Генерация JWT токена на основе информации о пользователе (например, идентификатор пользователя, имя пользователя, роли и срок действия)
+        // Вам потребуется использовать библиотеку для генерации JWT токенов, например, jjwt или Nimbus JOSE+JWT
+        // Здесь приведен пример для jjwt:
+
+        Date expirationDate = calculateTokenExpirationDate();
+        String token = Jwts.builder()
+                .setSubject(user.getUsername())
+                .claim("roles", user.getRoles())
+                .setExpiration(expirationDate)
+                .signWith(SignatureAlgorithm.HS256, "yourSecretKey")
+                .compact();
+
+        return token;
+    }*/
+
+    private boolean isValidEmail(String email) {
+        // Реализация проверки формата электронной почты
+        // Например, можно использовать регулярное выражение или сторонние библиотеки для проверки формата
+        return email.contains("@");
     }
 
     private String encryptPassword(String password) {
-        return "123";
-        // Encrypt the password using a secure hashing algorithm
+        // Тут можно задать функцию, но я не стал мудрить
+        return password;
     }
 }
