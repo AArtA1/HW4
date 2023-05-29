@@ -1,14 +1,14 @@
 package com.example.hw4_3.services;
 
-import com.example.hw4_3.dto.AuthenticationRequest;
 import com.example.hw4_3.dto.RegistrationRequest;
 import com.example.hw4_3.entities.UserEntity;
 import com.example.hw4_3.repositories.UserRepository;
-import org.junit.platform.commons.util.StringUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -26,7 +26,6 @@ public class AuthService {
             throw new Exception();
         }
 
-        //
         // Create a new user entity
         UserEntity user = new UserEntity();
         user.setUsername(request.getUsername());
@@ -42,8 +41,7 @@ public class AuthService {
 
 
     private void validateRegistrationRequest(RegistrationRequest request) throws Exception {
-        if (StringUtils.isBlank(request.getUsername()) || StringUtils.isBlank(request.getEmail())
-                || StringUtils.isBlank(request.getPassword())) {
+        if (request.getUsername().isBlank() || request.getPassword().isBlank() || request.getEmail().isBlank()) {
             throw new Exception("Missing required fields");
         }
 
@@ -53,7 +51,7 @@ public class AuthService {
 
     }
 
-    public String authenticateUser(AuthenticationRequest request) throws Exception {
+    /*public String authenticateUser(AuthenticationRequest request) throws Exception {
         // Поиск пользователя по нику
         Optional<UserEntity> user = userRepository.findByEmail(request.getEmail());
 
@@ -66,7 +64,7 @@ public class AuthService {
         //String token = generateToken(user);
 
         return token;
-    }
+    }*/
 
     /*private String generateToken(UserEntity user) {
         // Генерация JWT токена на основе информации о пользователе (например, идентификатор пользователя, имя пользователя, роли и срок действия)

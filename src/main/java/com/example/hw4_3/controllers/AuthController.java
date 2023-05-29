@@ -1,9 +1,8 @@
 package com.example.hw4_3.controllers;
 
-import com.example.hw4_3.dto.AuthenticationRequest;
 import com.example.hw4_3.dto.RegistrationRequest;
-import com.example.hw4_3.entities.UserEntity;
 import com.example.hw4_3.services.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,20 +10,30 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/user")
 public class AuthController {
+
     private final AuthService authService;
 
+    @Autowired
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
     @PostMapping("/register")
+    @ResponseBody
     public ResponseEntity<String> registerUser(@RequestBody RegistrationRequest request) {
         try {
             authService.registerUser(request);
             return ResponseEntity.ok("User registered successfully.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Incorrect input data");
+            return ResponseEntity.ok("User Registered");
         }
+    }
+
+
+    @GetMapping("/get")
+    @ResponseBody
+    public ResponseEntity<String> get(@RequestParam String str){
+        return ResponseEntity.ok("kruto" + str);
     }
 
 
