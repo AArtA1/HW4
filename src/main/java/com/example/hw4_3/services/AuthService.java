@@ -1,24 +1,40 @@
 package com.example.hw4_3.services;
 
 import com.example.hw4_3.dto.RegistrationRequest;
+import com.example.hw4_3.entities.SessionEntity;
 import com.example.hw4_3.entities.UserEntity;
+import com.example.hw4_3.repositories.SessionRepository;
 import com.example.hw4_3.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
+import java.security.Key;
 import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.Optional;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, SessionRepository sessionRepository) {
         this.userRepository = userRepository;
+        this.sessionRepository = sessionRepository;
     }
 
-    public void registerUser(RegistrationRequest request) throws Exception {
+
+    // Секретный ключ для подписи JWT
+    private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+    // Время действия токена (30 минут)
+    private final long expirationTime = 30 * 60 * 1000;
+
+    public void registerUser(@RequestBody RegistrationRequest request) throws Exception {
         // Validate input data
         try {
             validateRegistrationRequest(request);
@@ -51,36 +67,49 @@ public class AuthService {
 
     }
 
-    /*public String authenticateUser(AuthenticationRequest request) throws Exception {
-        // Поиск пользователя по нику
-        Optional<UserEntity> user = userRepository.findByEmail(request.getEmail());
-
-        // Проверка наличия пользователя и правильности пароля
-        if (user == null || (user.isPresent() && !user.get().getPasswordHash().equals(request.getPassword()))) {
+    public String authenticate(String email, String password) throws Exception {
+        Optional<UserEntity> user = userRepository.findByEmail(email);
+        if (user.isEmpty() || !password.equals(user.get().getPasswordHash())) {
             throw new Exception("Invalid email or password");
         }
 
-        // Генерация JWT токена
-        //String token = generateToken(user);
 
-        return token;
-    }*/
 
-    /*private String generateToken(UserEntity user) {
-        // Генерация JWT токена на основе информации о пользователе (например, идентификатор пользователя, имя пользователя, роли и срок действия)
-        // Вам потребуется использовать библиотеку для генерации JWT токенов, например, jjwt или Nimbus JOSE+JWT
-        // Здесь приведен пример для jjwt:
-
-        Date expirationDate = calculateTokenExpirationDate();
+        // Генерация JWT
         String token = Jwts.builder()
-                .setSubject(user.getUsername())
-                .claim("roles", user.getRoles())
-                .setExpiration(expirationDate)
-                .signWith(SignatureAlgorithm.HS256, "yourSecretKey")
+                .setSubject(user.get().getEmail())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(secretKey)
                 .compact();
 
+
+        Integer userId = userRepository.findByEmail(email).get().getId();
+        SessionEntity session = new SessionEntity();
+        session.setToken(token);
+        session.setUser_id(userId);
+        session.setExpires_at(LocalDateTime.now().plusMinutes(30));
+        sessionRepository.save(session);
+
+
         return token;
-    }*/
+    }
+
+    public String getUsernameFromToken(String token) throws Exception {
+
+
+        Optional<SessionEntity> session = sessionRepository.findByToken(token);
+
+        if(LocalDateTime.now().isAfter(session.get().getExpires_at())){
+            throw new Exception("Token is already invalid");
+        }
+
+        return userRepository.findById(session.get().getUser_id()).get().getEmail();
+
+    }
+
+    public Optional<UserEntity> getUserByEmail(String username){
+        return userRepository.findByEmail(username);
+    }
 
     private boolean isValidEmail(String email) {
         // Реализация проверки формата электронной почты
@@ -89,7 +118,7 @@ public class AuthService {
     }
 
     private String encryptPassword(String password) {
-        // Тут можно задать функцию, но я не стал мудрить
+        // Тут можно задать функцию для хэширования, но я не стал мудрить
         return password;
     }
 }
